@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استطلاع رأي وتفضيلات المشاهد</title>
+    <link rel="stylesheet" href="css3.css">
+</head>
+<body>
+
+    <h1>استطلاع جمهور الدراما التركية</h1>
+    <p>ساعدنا في معرفة رأيك وتجربتك عبر الإجابة على الأسئلة التالية</p>
+
+    <div class="survey-container">
+        <form action="#" method="GET">
+           
+            <label for="age">كم عمرك؟</label>
+            <input type="number" id="age" name="user_age" min="10" max="100" placeholder="مثال: 22" required>
+
+            <label for="device">ما هو جهازك المفضل لمشاهدة المسلسلات؟</label>
+            <select id="device" name="preferred_device" required>
+                <option value="" disabled selected>-- اختر الجهاز --</option>
+                <option value="phone">الهاتف الذكي (Mobile)</option>
+                <option value="laptop">الكمبيوتر المحمول (Laptop)</option>
+                <option value="tv">التلفزيون الذكي (Smart TV)</option>
+            </select>
+
+            <label>ما الذي يجذبك أكثر في المسلسل التركي؟</label>
+            <div class="checkbox-group">
+                <input type="checkbox" id="c1" name="feature" value="story"> <label for="c1" class="inline-label">القصة والسيناريو</label><br>
+                <input type="checkbox" id="c2" name="feature" value="actors"> <label for="c2" class="inline-label">أداء الممثلين</label><br>
+            </div>
+
+            <label for="feedback">اكتب لنا اقتراحاً لمسلسل تود إضافته للموقع:</label>
+            <textarea id="feedback" name="user_suggestion" rows="4" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+
+            <div class="btn-group">
+                <input type="submit" value="إرسال الإجابات">
+            </div>
+
+        </form>
+    </div>
+
+    <div class="back-box">
+        <a href="index.html" class="back-link">&#128072; العودة إلى الصفحة الرئيسية</a>
+    </div>
+
+</body>
+</html>
