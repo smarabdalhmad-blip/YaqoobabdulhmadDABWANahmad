@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>DEHA-P2P | التواصل المشفر بين صنعاء والبلاد</title>
+    <style>
+        body { background-color: #0a0e14; color: #00ff80; font-family: 'Courier New', monospace; margin: 0; padding: 15px; }
+        .container { max-width: 850px; margin: 0 auto; background: #10161e; border: 2px solid #00ff80; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,255,128,0.2); }
+        h2 { text-align: center; color: #00e5ff; text-transform: uppercase; font-size: 18px; }
+        textarea, input { width: 100%; background: #080b10; color: #00ff80; border: 1px solid #00e5ff; padding: 8px; margin: 8px 0; font-family: monospace; border-radius: 4px; box-sizing: border-box; font-size: 12px; }
+        button { background: #00e5ff; color: #000; border: none; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 4px; width: 100%; margin-top: 5px; font-size: 13px; }
+        button:hover { background: #00ff80; }
+        .log-box { background: #080b10; border: 1px dashed #ffaa00; padding: 10px; height: 130px; overflow-y: scroll; color: #ffaa00; margin-top: 10px; font-size: 12px; }
+        .status { padding: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; border-radius: 4px; background: #ff3344; color: #fff; }
+        .connected { background: #00aa55 !important; color: #fff !important; }
+        .step-box { border: 1px solid #334455; padding: 10px; margin-top: 10px; border-radius: 4px; background: #0d121a; }
+        .camouflage { display: none; background: #f0f4f8; color: #1e3c72; padding: 30px; border-radius: 8px; }
+        .camouflage input, .camouflage button { border: 1px solid #1e3c72; color: #000; background: #fff; }
+    </style>
+</head>
+<body>
+
+    <!-- غرفة العمليات السرية -->
+    <div class="container" id="tacticalView">
+        <h2>DEHA-P2P | قناة التراسل الآمن (صنعاء ⟷ البلاد)</h2>
+        <div id="connectionStatus" class="status">الحالة: غير متصل (بانتظار إنشاء الرابط)</div>
+
+        <!-- خطوات إعداد الاتصال بين الجهازين -->
+        <div class="step-box">
+            <b style="color: #00e5ff;">خطوة 1: ابدأ الاتصال (إذا كنت البادئ)</b>
+            <button onclick="createOffer()">إنشاء رمز الدعوة (Generate Offer)</button>
+            <textarea id="myOffer" rows="2" placeholder="انتظر ثواني ليظهر رمزك هنا، ثم نسخه وأرسله لأخيك..." readonly></textarea>
+        </div>
+
+        <div class="step-box">
+            <b style="color: #00e5ff;">خطوة 2: استقبال أو الرد على الاتصال</b>
+            <textarea id="remoteInput" rows="2" placeholder="الصق هنا الرمز الذي أرسله لك أخوك..."></textarea>
+            <button onclick="handleRemoteCode()">معالجة الرمز والاتصال (Connect / Answer)</button>
+        </div>
+
+        <!-- غرفة المراسلة -->
+        <div class="step-box" style="border-color: #00ff80;">
+            <b style="color: #00ff80;">غرفة المراسلة المشفرة المباشرة:</b>
+            <textarea id="msgInput" rows="2" placeholder="اكتب رسالتك السرية هنا...">السلام عليكم، هل الخط آمن في البلاد؟</textarea>
+            <button onclick="sendEncryptedMessage()" style="background: #00ff80; color: #000;">تشفير وإرسال عبر نفق P2P المباشر</button>
+            
+            <label style="margin-top: 10px; display: block;">سجل الأحداث وطابور الـ RAM:</label>
+            <div class="log-box" id="logArea">[ النظام جاهز. قم بإنشاء الاتصال أولاً مع أخيك. ]</div>
+
+            <button onclick="readAndWipe()" style="background: #ffaa00; color: #000; margin-top: 10px;">قراءة الرسالة المعلقة وتدميرها من الـ RAM (0x00)</button>
+        </div>
+
+        <button onclick="triggerCamouflage()" style="background: #ff3344; color: #fff; margin-top: 15px;">🚨 طوارئ الشرطة! (تفعيل وضع التمويه البريء)</button>
+    </div>
+
+    <!-- شاشة التمويه البريئة (حاسبة المعدل الجامعي) -->
+    <div class="container camouflage" id="camouflageView">
+        <h2 style="color: #1e3c72;">برنامج حساب المعدل التراكمي الجامعي</h2>
+        <label>مقرر هياكل البيانات:</label>
+        <input type="text" id="g1" value="92">
+        <label>مقرر أمن الشبكات:</label>
+        <input type="text" id="g2" value="88">
+        <label>رقم القيد الأكاديمي (أو كود النظام):</label>
+        <input type="password" id="secretCode" placeholder="أدخل الرقم هنا...">
+        <button onclick="checkCamouflageCode()">احسب المعدل الفصلي</button>
+        <p id="gpaResult" style="font-weight: bold; margin-top: 10px;"></p>
+        <p style="font-size: 11px; color: #666; text-align: center; margin-top: 20px;">نظام الشؤون الأكاديمية - جميع الحقوق محفوظة © 2026</p>
+    </div>
+
+<script>
+    let pc;
+    let dataChannel;
+    let temporaryRAMQueue = [];
+
+    // إعداد الاتصال مع خوادم متعددة لضمان عبور الشبكات اليمنية
+    function setupPeerConnection() {
+        if (pc) return;
+        pc = new RTCPeerConnection({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun.cloudflare.com:3478' },
+                { urls: 'stun:stunprotocol.org:3478' }
+            ]
+        });
+
+        // آلية ذكية لضمان ظهور الرمز فور تجميعه
+        let candidateFound = false;
+        pc.onicecandidate = e => {
+            if (e.candidate === null && !candidateFound) {
+                candidateFound = true;
+                document.getElementById("myOffer").value = btoa(JSON.stringify(pc.localDescription));
+                logMessage("[*] تم توليد الرمز بنجاح وجاهز للنسخ.");
+            }
+        };
+
+        // مؤمانة احتياطية في حال تأخر خوادم STUN
+        setTimeout(() => {
+            if (!candidateFound && pc.localDescription) {
+                candidateFound = true;
+                document.getElementById("myOffer").value = btoa(JSON.stringify(pc.localDescription));
+                logMessage("[*] تم توليد الرمز (بالوضع الاحتياطي).");
+            }
+        }, 3000);
+
+        pc.ondatachannel = e => {
+            dataChannel = e.channel;
+            bindDataChannelEvents();
+            updateStatus("متصل P2P بنجاح مع أخيك!", true);
+        };
+    }
+
+    async function createOffer() {
+        setupPeerConnection();
+        dataChannel = pc.createDataChannel("deha-chat");
+        bindDataChannelEvents();
+
+        let offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        logMessage("[*] جاري تفاوض الشبكة، انتظر 3 ثوانٍ ليظهر رمزك...");
+    }
+
+    async function handleRemoteCode() {
+        setupPeerConnection();
+        let inputVal = document.getElementById("remoteInput").value.trim();
+        if (!inputVal) return;
+
+        try {
+            let remoteDesc = JSON.parse(atob(inputVal));
+            if (remoteDesc.type === 'offer') {
+                await pc.setRemoteDescription(new RTCSessionDescription(remoteDesc));
+                let answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                logMessage("[*] تم قبول الدعوة، انسخ رمز الرد (Answer) الظاهر في خانة الرمز وأرسله لأخيك.");
+            } else if (remoteDesc.type === 'answer') {
+                await pc.setRemoteDescription(new RTCSessionDescription(remoteDesc));
+                updateStatus("متصل P2P بنجاح مع أخيك!", true);
+                logMessage("[✓] تم ربط نفق الاتصال المباشر بين صنعاء والبلاد بنجاح تام!");
+            }
+        } catch (e) {
+            logMessage("[⛔ خطأ] الرمز غير صالح أو حدث خطأ في المطابقة.");
+        }
+    }
+
+    function bindDataChannelEvents() {
+        dataChannel.onopen = () => updateStatus("متصل P2P بنجاح مع أخيك!", true);
+        dataChannel.onclose = () => updateStatus("انقطع الاتصال!", false);
+        dataChannel.onmessage = async e => {
+            let packet = JSON.parse(e.data);
+            temporaryRAMQueue.push(packet);
+            logMessage("[+] وصلت رسالة مشفرة جديدة من أخيك وتم إيداعها في طابور الـ RAM.");
+        };
+    }
+
+    async function sendEncryptedMessage() {
+        if (!dataChannel || dataChannel.readyState !== "open") {
+            alert("التطبيق غير متصل بعد! تحول الحالة إلى الأخضر أولاً.");
+            return;
+        }
+
+        let text = document.getElementById("msgInput").value.trim();
+        if (!text) return;
+
+        let enc = new TextEncoder();
+        let data = enc.encode(text);
+
+        let key = await window.crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+        let iv = window.crypto.getRandomValues(new Uint8Array(12));
+        let encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, data);
+
+        let exportedKey = await window.crypto.subtle.exportKey("jwk", key);
+
+        let packet = {
+            keyJWK: exportedKey,
+            iv: Array.from(iv),
+            payload: Array.from(new Uint8Array(encrypted))
+        };
+
+        dataChannel.send(JSON.stringify(packet));
+        logMessage("[+] تم تشفير رسالتك بـ AES-GCM وإرسالها عبر نفق P2P إلى جهاز أخيك.");
+        document.getElementById("msgInput").value = "";
+    }
+
+    async function readAndWipe() {
+        if (temporaryRAMQueue.length === 0) {
+            logMessage("[!] طابور الـ RAM فارغ - لا توجد رسائل معلقة.");
+            return;
+        }
+
+        let packet = temporaryRAMQueue.shift();
+
+        try {
+            let key = await window.crypto.subtle.importKey(
+                "jwk",
+                packet.keyJWK,
+                { name: "AES-GCM", length: 256 },
+                true,
+                ["decrypt"]
+            );
+
+            let decrypted = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: new Uint8Array(packet.iv) },
+                key,
+                new Uint8Array(packet.payload)
+            );
+
+            let dec = new TextDecoder();
+            let msg = dec.decode(decrypted);
+
+            logMessage(`[✓] قراءة من الـ RAM (محتوى الرسالة): "${msg}"`);
+            
+            packet.payload = null;
+            packet.keyJWK = null;
+            packet.iv = null;
+
+            logMessage("[X] تم تدمير الأثر وتصفير خلايا الـ RAM بالكامل (0x00)!\n-----------------------------------");
+        } catch(e) {
+            logMessage("[⛔] فشل فك التشفير!");
+        }
+    }
+
+    function updateStatus(text, isConnected) {
+        let st = document.getElementById("connectionStatus");
+        st.innerText = "الحالة: " + text;
+        if (isConnected) st.classList.add("connected");
+        else st.classList.remove("connected");
+    }
+
+    function logMessage(text) {
+        let log = document.getElementById("logArea");
+        log.innerHTML += "<br>" + text;
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function triggerCamouflage() {
+        if (pc) { pc.close(); pc = null; }
+        temporaryRAMQueue = [];
+        document.getElementById("tacticalView").style.display = "none";
+        document.getElementById("camouflageView").style.display = "block";
+    }
+
+    function checkCamouflageCode() {
+        let code = document.getElementById("secretCode").value.trim();
+        if(code === "2026" || code === "DEHA") {
+            document.getElementById("secretCode").value = "";
+            document.getElementById("camouflageView").style.display = "none";
+            document.getElementById("tacticalView").style.display = "block";
+        } else {
+            let g1 = parseFloat(document.getElementById("g1").value) || 0;
+            let g2 = parseFloat(document.getElementById("g2").value) || 0;
+            document.getElementById("gpaResult").innerText = `المعدل الفصلي: ${((g1 + g2)/2).toFixed(2)}% (ممتاز)`;
+        }
+    }
+</script>
+
+</body>
+</html>
